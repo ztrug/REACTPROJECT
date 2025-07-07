@@ -1,120 +1,45 @@
-import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import express from 'express'
+import cors from 'cors'
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+// Teste de conexão (opcional)
+prisma.$connect().catch(console.error)
+// Controllers
+import {
+  handleCreateUser,
+  handleGetUsers,
+  handleUpdateUser,
+  handleDeleteUser
+} from './controllers/userController.js'
 
-const prisma = new PrismaClient();
-const app = express();
-const PORT = 3100; // Ou a porta que preferir
+import { handleCreateProfile } from './controllers/profileController.js'
+import {
+  handleCreateOrder,
+  handleGetOrdersByUser
+} from './controllers/orderController.js'
+
+const app = express()
+const PORT = 3100
+
+app.use(cors())
 app.use(express.json())
 
+// Rotas de usuário
+app.post('/usuarios', handleCreateUser)
+app.get('/usuarios', handleGetUsers)
+app.put('/usuarios/:id', handleUpdateUser)
+app.delete('/usuarios/:id', handleDeleteUser)
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+// Rotas de perfil (altere para usar :userId)
+app.post('/usuarios/:userId/profile', handleCreateProfile) // POST /usuarios/1/profile
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`⚠️  A porta ${PORT} já está em uso!`);
-    console.log('Tente:');
-    console.log(`1. Mudar a porta no server.js (ex: 3000)`);
-    console.log(`2. Executar: kill -9 $(lsof -t -i:${PORT}) (Linux/Mac)`);
-    console.log(`3. Reiniciar seu computador`);
-  } else {
-    console.error('Erro no servidor:', err);
-  }
-});
+// Rotas de pedidos (corrija o path)
+app.post('/usuarios/:userId/orders', handleCreateOrder) // POST /usuarios/1/orders
+app.get('/usuarios/:userId/orders', handleGetOrdersByUser)
 
-
-app.post('/usuarios', async (req, res) => {
-  try {
-    const novoUser = await prisma.user.create({
-      data: {
-        nome: req.body.nome,
-        email: req.body.email,
-        senha: req.body.senha,
-      }
-    });
-    res.status(201).json(novoUser);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: 'Erro ao criar usuário.' });
-  }
-});
-
-
-
-app.get('/usuarios',async (req, res)=> {
-
-    let users = []
-
-  if(req.query){
-    users = await prisma.user.findMany({
-      where: {
-        name: req.query.name, 
-        email: req.query.email,
-        senha: req.query.senha
-
-      }
-    })
-  }else{
-    users = await prisma.user.findMany()
-    }
- 
-  console.log(req)
-  
-  res.status(200).json(users)
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`)
 })
-
-
-app.put('/usuarios/:id', async (req, res) => {
-  const { email, nome, senha } = req.body;
-
-  if (!email || !nome || !senha) {
-    return res.status(400).json({ erro: 'Campos email, nome e senha são obrigatórios.' });
-  }
-
-  try {
-    const usuarioAtualizado = await prisma.user.update({
-      where: {
-        id: Number(req.params.id)
-      },
-      data: {
-        email,
-        nome,
-        senha
-      }
-    });
-
-    res.status(200).json(usuarioAtualizado);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: 'Erro ao atualizar usuário.' });
-  }
-});
-
-
-app.delete('/usuarios/:id', async (req, res ) => {
-    await prisma.user.delete({ 
-      where: {
-        id: Number(req.params.id)
-      }
-    })
-    res.status(200).json({message:"Usuario deletado com sucesso!"})
-})  
-/*
-Criar API USUARIOS
-Lista
-Editar
-Deletar
-*/
-
-
-
-
-
-
-
-
-
-
-
-
+prisma.$connect()
+  .then(() => console.log("✅ Conectado ao banco de dados"))
+  .catch(err => console.error("❌ Erro de conexão:", err))

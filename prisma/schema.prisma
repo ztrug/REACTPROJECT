@@ -14,9 +14,26 @@ datasource db {
 }
 
 model User {
-  id      Int     @id @default(autoincrement()) // ID autoincremental (padrão MySQL)
+  id      Int     @id @default(autoincrement())
   nome    String
   email   String  @unique
   senha   String
-  // Outros campos...
+
+  // Relacionamentos
+  profile Profile?   // <- um-para-um (opcional)
+  orders  Order[]    // <- um-para-muitos (lista de pedidos)
+}
+
+model Profile {
+  id        Int     @id @default(autoincrement())
+  bio       String
+  userId    Int     @unique  // ← Adicione @unique aqui
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id        Int     @id @default(autoincrement())
+  item      String
+  userId    Int     // Campo obrigatório
+  user      User    @relation(fields: [userId], references: [id])
 }
